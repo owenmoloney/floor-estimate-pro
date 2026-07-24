@@ -36,6 +36,7 @@ public class MainFrame extends JFrame{
         setLayout(new BorderLayout());
 
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel toolbar2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton openBtn = new JButton("Open Image");
         JButton calibrateBtn = new JButton("Calibrate");
         JButton applyCalBtn = new JButton("Apply Calibration");
@@ -44,6 +45,7 @@ public class MainFrame extends JFrame{
         JButton obstacleBtn = new JButton("Draw Obstacle");
         JButton finishObstacleBtn = new JButton("Finish Obstacle");
         JButton estimateBtn = new JButton("Estimate");
+        JButton finishEstimateBtn = new JButton("Finish Estimate");
         JButton saveBtn = new JButton("Save");
         JButton loadBtn = new JButton("Load");
         JButton exportBtn = new JButton("Export");
@@ -63,20 +65,26 @@ public class MainFrame extends JFrame{
         toolbar.add(finishRoomBtn);
         toolbar.add(obstacleBtn);
         toolbar.add(finishObstacleBtn);
-        toolbar.add(new JLabel("Waste:"));
-        toolbar.add(wasteField);
-        toolbar.add(new JLabel("Price:"));
-        toolbar.add(priceField);
-        toolbar.add(estimateBtn);
-        toolbar.add(saveBtn);
-        toolbar.add(loadBtn);
-        toolbar.add(exportBtn);
+
+        toolbar2.add(new JLabel("Waste:"));
+        toolbar2.add(wasteField);
+        toolbar2.add(new JLabel("Price:"));
+        toolbar2.add(priceField);
+        toolbar2.add(estimateBtn);
+        toolbar2.add(finishEstimateBtn);
+        toolbar2.add(saveBtn);
+        toolbar2.add(loadBtn);
+        toolbar2.add(exportBtn);
+
+        JPanel north = new JPanel(new BorderLayout());
+        north.add(toolbar, BorderLayout.NORTH);
+        north.add(toolbar2, BorderLayout.SOUTH);
 
         JPanel south = new JPanel(new BorderLayout());
         south.add(statusLabel, BorderLayout.WEST);
         south.add(resultLabel, BorderLayout.EAST);
 
-        add(toolbar, BorderLayout.NORTH);
+        add(north, BorderLayout.NORTH);
         add(new JScrollPane(canvas), BorderLayout.CENTER);
         add(south, BorderLayout.SOUTH);
 
@@ -93,6 +101,7 @@ public class MainFrame extends JFrame{
         obstacleBtn.addActionListener(e -> onDrawObstacleTool());
         finishObstacleBtn.addActionListener(e -> onFinishObstacle());
         estimateBtn.addActionListener(e -> refreshEstimate());
+        finishEstimateBtn.addActionListener(e -> onFinishEstimate());
         saveBtn.addActionListener(e -> onSave());
         loadBtn.addActionListener(e -> onLoad());
         exportBtn.addActionListener(e -> onExport());
@@ -194,7 +203,7 @@ public class MainFrame extends JFrame{
             double waste = Double.parseDouble(wasteField.getText().trim());
             double price = Double.parseDouble(priceField.getText().trim());
             EstimateResult result = EstimateCalculator.calculate(
-                project.rooms().get(0),
+                project.rooms(),
                 project.obstacles(),
                 project.calibration(),
                 waste,
@@ -259,7 +268,7 @@ public class MainFrame extends JFrame{
             double waste = Double.parseDouble(wasteField.getText().trim());
             double price = Double.parseDouble(priceField.getText().trim());
             EstimateResult result = EstimateCalculator.calculate(
-                project.rooms().get(0),
+                project.rooms(),
                 project.obstacles(),
                 project.calibration(),
                 waste,
@@ -271,6 +280,36 @@ public class MainFrame extends JFrame{
             }
             EstimateExporter.exportCsv(result, path);
             statusLabel.setText("Exported " + path);
+        }catch(Exception ex){
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
+    }
+
+    void onFinishEstimate(){
+        if(!project.isCalibrated()){
+            JOptionPane.showMessageDialog(this, "Calibrate first");
+            return;
+        }
+        if(project.rooms().isEmpty()){
+            JOptionPane.showMessageDialog(this, "Add a room first");
+            return;
+        }
+        try{
+            double waste = Double.parseDouble(wasteField.getText().trim());
+            double price = Double.parseDouble(priceField.getText().trim());
+            EstimateResult result = EstimateCalculator.calculate(
+                project.rooms(),
+                project.obstacles(),
+                project.calibration(),
+                waste,
+                price
+            );
+            EstimateResultsFrame frame = new EstimateResultsFrame(
+                result,
+                project.roomCount(),
+                project.obstacleCount()
+            );
+            frame.setVisible(true);
         }catch(Exception ex){
             JOptionPane.showMessageDialog(this, ex.getMessage());
         }

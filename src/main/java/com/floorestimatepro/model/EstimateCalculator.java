@@ -3,8 +3,11 @@ import java.util.List;
 
 
 public class EstimateCalculator{
-    public static EstimateResult calculate(Room room, List<Obstacle> obstacles, Calibration calibration, double wasteFactor, double pricePerSqFt){
-        double roomArea = room.pixelArea();
+    public static EstimateResult calculate(List<Room> rooms, List<Obstacle> obstacles, Calibration calibration, double wasteFactor, double pricePerSqFt){
+        double roomArea = 0;
+        for(Room room : rooms){
+            roomArea = roomArea + room.pixelArea();
+        }
 
         double  obstacleTotal = 0;
             for(Obstacle obstacle : obstacles){

@@ -2,14 +2,11 @@
 
 Desktop Java app that turns floor-plan images into square-footage and cost estimates.
 
-<!-- After you push to GitHub, uncomment and set YOUR_USERNAME:
-[![CI](https://github.com/YOUR_USERNAME/floor-estimate-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/floor-estimate-pro/actions/workflows/ci.yml)
--->
+[![CI](https://github.com/owenmoloney/floor-estimate-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/owenmoloney/floor-estimate-pro/actions/workflows/ci.yml)
 
-<!-- After adding PNGs under docs/screenshots/, uncomment:
+
 ![App overview](docs/screenshots/overview.png)
 ![Estimate result](docs/screenshots/estimate.png)
--->
 
 ## Features
 
