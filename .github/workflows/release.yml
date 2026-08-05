@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App version without v prefix (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build fat JAR
+        run: mvn -B package -DskipTests
+
+      - name: Upload fat JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: floor-estimate-pro-jar
+          path: target/floor-estimate-pro.jar
+
+  package-mac:
+    needs: build-jar
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build macOS DMG
+        env:
+          APP_VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          chmod +x scripts/package-mac.sh
+          ./scripts/package-mac.sh
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: floor-estimate-pro-mac
+          path: dist/mac/*.dmg
+
+  package-windows:
+    needs: build-jar
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Install WiX Toolset
+        run: choco install wixtoolset --version=3.14.1 -y
+        shell: pwsh
+
+      - name: Add WiX to PATH
+        shell: pwsh
+        run: |
+          $wix = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
+          if (-not (Test-Path $wix)) {
+            $wix = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
+          }
+          echo "$wix" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Get-ChildItem $wix
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Windows MSI
+        env:
+          APP_VERSION: ${{ steps.ver.outputs.version }}
+        shell: pwsh
+        run: .\scripts\package-windows.ps1
+
+      - name: Upload Windows MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: floor-estimate-pro-windows
+          path: dist/windows/*.msi
+
+  publish-release:
+    needs: [build-jar, package-mac, package-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve version and tag
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+            TAG="v${VERSION}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Flatten and rename assets
+        shell: bash
+        run: |
+          mkdir -p out
+          cp release-assets/floor-estimate-pro-jar/floor-estimate-pro.jar \
+            "out/floor-estimate-pro-${{ steps.meta.outputs.version }}.jar"
+          cp release-assets/floor-estimate-pro-mac/*.dmg \
+            "out/FloorEstimatePro-${{ steps.meta.outputs.version }}-mac.dmg"
+          cp release-assets/floor-estimate-pro-windows/*.msi \
+            "out/FloorEstimatePro-${{ steps.meta.outputs.version }}-windows.msi"
+          ls -la out
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Floor Estimate Pro ${{ steps.meta.outputs.version }}
+          generate_release_notes: true
+          files: |
+            out/floor-estimate-pro-${{ steps.meta.outputs.version }}.jar
+            out/FloorEstimatePro-${{ steps.meta.outputs.version }}-mac.dmg
+            out/FloorEstimatePro-${{ steps.meta.outputs.version }}-windows.msi
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
