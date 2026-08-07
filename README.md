@@ -1,12 +1,18 @@
 # Floor Estimate Pro
 
-Desktop Java app that turns floor-plan images into square-footage and cost estimates.
+Desktop app that turns floor-plan images into square-footage and cost estimates.
 
 [![CI](https://github.com/owenmoloney/floor-estimate-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/owenmoloney/floor-estimate-pro/actions/workflows/ci.yml)
 
 
 ![App overview](docs/screenshots/overview.png)
 ![Estimate result](docs/screenshots/estimate.png)
+
+## History
+
+Python was developed first. It was later replaced by the current Java/Swing version used for company packaging (fat JAR / Mac / Windows installers on `main`).
+
+This `python` branch restores a Python desktop implementation for visibility. The original Python sources are not recovered from another machine — this is a clean reimplementation that matches the Java app’s behavior. Company employee distribution remains the **Java** fat JAR and installers built from `main`.
 
 ## Features
 
@@ -22,15 +28,20 @@ Desktop Java app that turns floor-plan images into square-footage and cost estim
 
 | Layer | Choice |
 | --- | --- |
-| Language | Java 17 |
-| UI | Swing |
-| Build | Maven |
-| JSON | Gson |
-| Tests | JUnit 5 |
+| Language (product / `main`) | Java 17 |
+| UI (Java) | Swing |
+| Build (Java) | Maven |
+| JSON (Java) | Gson |
+| Tests (Java) | JUnit 5 |
+| Language (this branch) | Python 3.11+ |
+| UI (Python) | PySide6 |
+| Tests (Python) | pytest |
 
-## Quick start
+## Quick start (Java — also on this branch)
 
 **Requirements:** JDK 17+ and Maven 3.8+
+
+Company packaging stays on `main`. Java sources here are unchanged; you can still run them from this branch:
 
 ```bash
 # Run unit tests
@@ -43,6 +54,26 @@ mvn exec:java
 mvn package
 java -jar target/floor-estimate-pro.jar
 ```
+
+## Python (this branch)
+
+**Requirements:** Python 3.11+
+
+```bash
+cd python
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+
+# Run unit tests
+pytest
+
+# Launch the desktop app
+python -m floor_estimate_pro.app
+```
+
+See [python/README.md](python/README.md) for a short run cheat sheet.
 
 ### Typical workflow
 
